@@ -155,7 +155,9 @@ let KleinScanner;
 	  "0": S("number", {}),
 
 	  ...char_transition("\r\n\t\f\v ", 
-		  S("white_space", char_transition("\r\n\t\f\v ", "white_space")))
+		  S("white_space", char_transition("\r\n\t\f\v ", "white_space"))),
+
+	  "undefined": S("end", {})
 	});
 
 	KleinScanner = Scanner(KleinFSA, "start", (state, start_line, end_line, start, end) => {
@@ -167,11 +169,12 @@ let KleinScanner;
 		  "and":"and", "print":"print", "or":"or", "left_paren":"left_paren",
 		  "right_paren":"right_paren", "comment":"comment",
 		  "comma":"comma", "colon":"colon",
-		  "plus":"plus", "minus":"minus", "star":"start", "slash":"slash",
+		  "plus":"plus", "minus":"minus", "star":"star", "slash":"slash",
 		  "less_than":"less_than", "equal":"equal", "white_space":"white_space",
 		  "i": "identifier",
 		  "t": "identifier",
 		  "f": "identifier",
+		  "end": "end",
 
 		  ...Object.fromEntries(Array(keyword_states).fill()
 			  .map((v, i) => ["kstate " + i, "identifier"]))
@@ -188,3 +191,594 @@ let KleinScanner;
 
 
 
+
+let parse_table = {
+	"PROGRAM": {
+		"function": [ "push", [ "DEFINITION-LIST" ] ],
+		"end": [ "reduce" ]
+	},
+	"DEFINITION-LIST": {
+		"function": [
+			"push", [
+				"DEFINITION",
+				"DEFINITION-LIST"
+			]
+		],
+		"end": [ "reduce" ]
+	},
+	"DEFINITION": {
+		"function": [
+			"push", [
+				"function",
+			       	"identifier",
+			       	"left_paren",
+			       	"PARAMETER-LIST",
+			       	"right_paren",
+			       	"colon",
+			       	"TYPE", 
+				"BODY"
+			]
+		]
+	},
+	"PARAMETER-LIST": {
+		"identifier": [
+			"push", [ "FORMAL-PARAMETERS" ]
+		],
+		"right_paren": [ "reduce" ]
+	},
+	"FORMAL-PARAMETERS": {
+		"identifier": [
+			"push", [
+				"ID-WITH-TYPE",
+				"FORMAL-PARAMETERS-2"
+			]
+		]
+	},
+	"FORMAL-PARAMETERS-2": {
+		"comma": [
+			"push", [
+				"comma",
+				"FORMAL-PARAMETERS"
+			]	
+		],
+		"right_paren": [ "reduce" ]
+	},
+	"ID-WITH-TYPE": {
+		"identifier": [
+			"push", [
+				"identifier",
+				"colon", 
+				"TYPE"
+			]	
+		]
+	},
+	"TYPE": {
+		"boolean": [ "push", [ "boolean" ] ],
+		"integer": [ "push", [ "integer" ] ]
+	},
+	"BODY": {
+		"print": [
+			"push", [
+				"PRINT-EXPRESSION",
+				"BODY"
+			]
+		],
+
+		"not": [
+			"push", [ "EXPRESSION" ]
+		],
+		"minus": [
+			"push", [ "EXPRESSION" ]	
+		],
+		"identifier": [
+			"push", [ "EXPRESSION" ]	
+		],
+		"if": [
+			"push", [ "EXPRESSION"	]
+		],
+		"left_paren": [
+			"push", [ "EXPRESSION" ]
+		],
+		"number": [
+			"push", [ "EXPRESSION"]	
+		],
+		"true": [
+			"push", [ "EXPRESSION"]
+		],
+		"false": [
+			"push", [ "EXPRESSION" ]	
+		]
+	},
+	"PRINT-EXPRESSION": {
+		"print": [
+			"push", [
+				"print",
+				"left_paren",
+				"EXPRESSION",
+				"right_paren"
+			]
+		]
+	},
+	"EXPRESSION": {
+		"not": [
+			"push", [
+				"SIMPLE-EXPRESSION",
+				"EXPRESSION-2"
+			]
+		],
+		"minus": [
+			"push", [
+				"SIMPLE-EXPRESSION",
+				"EXPRESSION-2"
+			]	
+		],
+		"identifier": [
+			"push", [
+				"SIMPLE-EXPRESSION",
+				"EXPRESSION-2"
+			]	
+		],
+		"if": [
+			"push", [
+				"SIMPLE-EXPRESSION",
+				"EXPRESSION-2"
+			]
+		],
+		"left_paren": [
+			"push", [
+				"SIMPLE-EXPRESSION",
+				"EXPRESSION-2"
+			]
+		],
+		"number": [
+			"push", [
+				"SIMPLE-EXPRESSION",
+				"EXPRESSION-2"
+			]	
+		],
+		"true": [
+			"push", [
+				"SIMPLE-EXPRESSION",
+				"EXPRESSION-2"
+			]
+		],
+		"false": [
+			"push", [
+				"SIMPLE-EXPRESSION",
+				"EXPRESSION-2"
+			]	
+		]	
+	},
+	"EXPRESSION-2": {
+		"equal": [
+			"push", [
+				"equal",
+				"EXPRESSION"
+			]
+		],
+		"less_than": [
+			"push", [
+				"less_than",
+				"EXPRESSION"
+			]
+		],
+		"comma": [ "reduce" ],
+		"then": [ "reduce" ],
+		"else": [ "reduce" ],
+		"right_paren": [ "reduce" ],
+		"function": [ "reduce" ],
+		"end": [ "reduce" ]
+	},
+
+	"SIMPLE-EXPRESSION": {
+		"not": [
+			"push", [
+				"TERM",
+				"SIMPLE-EXPRESSION-2"
+			]
+		],
+		"minus": [
+			"push", [
+				"TERM",
+				"SIMPLE-EXPRESSION-2"
+			]	
+		],
+		"identifier": [
+			"push", [
+				"TERM",
+				"SIMPLE-EXPRESSION-2"
+			]	
+		],
+		"if": [
+			"push", [
+				"TERM",
+				"SIMPLE-EXPRESSION-2"
+			]
+		],
+		"left_paren": [
+			"push", [
+				"TERM",
+				"SIMPLE-EXPRESSION-2"
+			]
+		],
+		"number": [
+			"push", [
+				"TERM",
+				"SIMPLE-EXPRESSION-2"
+			]	
+		],
+		"true": [
+			"push", [
+				"TERM",
+				"SIMPLE-EXPRESSION-2"
+			]
+		],
+		"false": [
+			"push", [
+				"TERM",
+				"SIMPLE-EXPRESSION-2"
+			]	
+		]
+	},
+
+	"SIMPLE-EXPRESSION-2": {
+		"or": [
+			"push", [
+				"or",
+				"SIMPLE-EXPRESSION"
+			]
+		],
+		"plus": [
+			"push", [
+				"plus",
+				"SIMPLE-EXPRESSION"
+			]
+		],
+		"minus": [
+			"push", [
+				"minus",
+				"SIMPLE-EXPRESSION"
+			]
+		],
+		"comma": [ "reduce" ],
+		"then": [ "reduce" ],
+		"else": [ "reduce" ],
+		"right_paren": [ "reduce" ],
+		"function": [ "reduce" ],
+		"equal": [ "reduce" ],
+		"less_than": [ "reduce" ],
+		"end": [ "reduce" ]
+	},
+	"TERM": {
+		"not": [
+			"push", [
+				"FACTOR",
+				"TERM-2"
+			]
+		],
+		"minus": [
+			"push", [
+				"FACTOR",
+				"TERM-2"
+			]	
+		],
+		"identifier": [
+			"push", [
+				"FACTOR",
+				"TERM-2"
+			]	
+		],
+		"if": [
+			"push", [
+				"FACTOR",
+				"TERM-2"
+			]
+		],
+		"left_paren": [
+			"push", [
+				"FACTOR",
+				"TERM-2"
+			]
+		],
+		"number": [
+			"push", [
+				"FACTOR",
+				"TERM-2"
+			]	
+		],
+		"true": [
+			"push", [
+				"FACTOR",
+				"TERM-2"
+			]
+		],
+		"false": [
+			"push", [
+				"FACTOR",
+				"TERM-2"
+			]	
+		]
+	},
+
+	"TERM-2": {
+		"star": [
+			"push", [
+				"star",
+				"TERM"
+			]
+		],
+		"slash": [
+			"push", [
+				"slash",
+				"TERM"
+			]
+		],
+		"and": [
+			"push", [
+				"and",
+				"TERM"
+			]
+		],
+		"comma": [ "reduce" ],
+		"then": [ "reduce" ],
+		"else": [ "reduce" ],
+		"right_paren": [ "reduce" ],
+		"function": [ "reduce" ],
+		"equal": [ "reduce" ],
+		"less_than": [ "reduce" ],
+		"or": [ "reduce" ],
+		"plus": [ "reduce" ],
+		"minus": [ "reduce" ],
+		"end": [ "reduce" ]
+	},
+	"FACTOR": {
+		"not": [
+			"push", [
+				"not",
+				"FACTOR"
+			]
+		],
+		"minus": [
+			"push", [
+				"minus",
+				"FACTOR"
+			]	
+		],
+		"identifier": [
+			"push", [
+				"identifier",
+				"FACTOR-2"
+			]	
+		],
+		"if": [
+			"push", [
+				"if",
+				"EXPRESSION",
+				"then",
+				"EXPRESSION",
+				"else",
+				"EXPRESSION"
+			]
+		],
+		"left_paren": [
+			"push", [
+				"left_paren",
+				"EXPRESSION",
+				"right_paren"
+			]
+		],
+		"number": [ "push", [ "LITERAL" ] ],
+		"true": [ "push", [ "LITERAL" ] ],
+		"false": [
+			"push", [ "LITERAL" ]	
+		],
+
+		"comma": [ "reduce" ],
+		"then": [ "reduce" ],
+		"else": [ "reduce" ],
+		"right_paren": [ "reduce" ],
+		"function": [ "reduce" ],
+		"equal": [ "reduce" ],
+		"less_than": [ "reduce" ],
+		"or": [ "reduce" ],
+		"plus": [ "reduce" ],
+		"minus": [ "reduce" ],
+		"star": [ "reduce" ],
+		"slash": [ "reduce" ],
+		"and": [ "reduce" ],
+		"null": [ "reduce" ]
+	},
+	"FACTOR-2": {
+		"left_paren": [
+			"push", [
+				"left_paren",
+				"ARGUMENT-LIST",
+				"right_paren"
+			]
+		],
+		"comma": [ "reduce" ],
+		"then": [ "reduce" ],
+		"else": [ "reduce" ],
+		"right_paren": [ "reduce" ],
+		"function": [ "reduce" ],
+		"equal": [ "reduce" ],
+		"less_than": [ "reduce" ],
+		"or": [ "reduce" ],
+		"plus": [ "reduce" ],
+		"minus": [ "reduce" ],
+		"star": [ "reduce" ],
+		"slash": [ "reduce" ],
+		"and": [ "reduce" ],
+		"end": [ "reduce" ]
+	},
+
+	"ARGUMENT-LIST": {
+		"right_paren": [ "reduce" ],
+		"not": [
+			"push", [ "FORMAL-ARGUMENTS" ]
+		],
+		"minus": [
+			"push", [ "FORMAL-ARGUMENTS" ]	
+		],
+		"identifier": [
+			"push", [ "FORMAL-ARGUMENTS" ]	
+		],
+		"if": [
+			"push", [ "FORMAL-ARGUMENTS" ]
+		],
+		"left_paren": [
+			"push", [ "FORMAL-ARGUMENTS" ]
+		],
+		"number": [
+			"push", [ "FORMAL-ARGUMENTS" ]	
+		],
+		"true": [
+			"push", [ "FORMAL-ARGUMENTS" ]
+		],
+		"false": [
+			"push", [ "FORMAL-ARGUMENTS" ]	
+		]	
+	},
+	"FORMAL-ARGUMENTS": {
+		"right_paren": [ "reduce" ],
+		"not": [
+			"push", [
+				"EXPRESSION",
+				"FORMAL-ARGUMENTS-2"
+			]
+		],
+		"minus": [
+			"push", [
+				"EXPRESSION",
+				"FORMAL-ARGUMENTS-2"
+			]	
+		],
+		"identifier": [
+			"push", [
+				"EXPRESSION",
+				"FORMAL-ARGUMENTS-2"
+			]	
+		],
+		"if": [
+			"push", [
+				"EXPRESSION",
+				"FORMAL-ARGUMENTS-2"
+			]
+		],
+		"left_paren": [
+			"push", [
+				"EXPRESSION",
+				"FORMAL-ARGUMENTS-2"
+			]
+		],
+		"number": [
+			"push", [
+				"EXPRESSION",
+				"FORMAL-ARGUMENTS-2"
+			]	
+		],
+		"true": [
+			"push", [
+				"EXPRESSION",
+				"FORMAL-ARGUMENTS-2"
+			]
+		],
+		"false": [
+			"push", [
+				"EXPRESSION",
+				"FORMAL-ARGUMENTS-2"
+			]	
+		]	
+	},
+	"FORMAL-ARGUMENTS-2": {
+		"comma": [
+			"push", [
+				"comma",	
+				"FORMAL-ARGUMENTS"
+			]	
+		],
+		"right_paren": [ "reduce" ],
+		"function": [ "reduce" ],
+		"equal": [ "reduce" ],
+		"less_than": [ "reduce" ],
+		"end": [ "reduce" ]
+	},
+	"LITERAL": {
+		"number": [
+			"push", [ "number" ]	
+		],
+		"true": [
+			"push", [ "true" ]
+		],
+		"false": [
+			"push", [ "false" ]
+		]
+	}
+};
+
+
+let Parser = (table, scanner, skip) => {
+	let obj = {
+		parse: (string) => {
+			scanner.init(string);
+			let stack = ["end", "PROGRAM"]; //last state
+
+			let p_token = null; //for error messages 
+			while(stack.length){
+
+				let [token, value] = scanner.peek();
+				while(token != null && skip.some(v => token.type == v)){
+					scanner.next();
+					[token, value] = scanner.peek();
+				}
+
+				if(token == null){
+					console.log("scan error after: ", p_token, value);
+					break;
+				}
+
+				let state = stack.pop();
+
+				if(table[state]){
+					if(table[state][token.type] == null){
+						console.log("parse error after: ", p_token, value, " unexpected ", token, " expected one of ", table[state]);
+						break;
+					}
+
+					p_token = token;
+
+					let step = table[state][token.type];
+
+					switch(step[0]){
+						case "push":
+							stack.push(...step[1].toReversed())
+						case "reduce":
+							; //TODO
+					}
+				}else{
+					if(state != token.type){
+						console.log("parse error after: ", p_token, value, " unexpected ", token);
+						break;
+					}
+
+					scanner.next();
+
+
+					//TODO
+				}
+
+
+
+			}
+
+
+			if(stack.length != 0)
+				return null;
+		}
+	}
+
+	return obj
+}
+
+
+let KleinParser = Parser(parse_table, KleinScanner, ["comment", "white_space"]);
