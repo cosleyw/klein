@@ -194,42 +194,56 @@ let KleinScanner;
 
 let parse_table = {
 	"PROGRAM": {
-		"function": [ "push", [ "DEFINITION-LIST" ] ],
-		"end": [ "reduce" ]
+		"function": [ "push", [ 
+			"NIL-ACTION",
+			"DEFINITION-LIST" 
+		] ],
+		"end": [ ] 
 	},
 	"DEFINITION-LIST": {
 		"function": [
 			"push", [
 				"DEFINITION",
+				"LIST-ACTION",
 				"DEFINITION-LIST"
 			]
 		],
-		"end": [ "reduce" ]
+		"end": [ ]
 	},
 	"DEFINITION": {
 		"function": [
 			"push", [
 				"function",
 			       	"identifier",
+				"ID-ACTION",
 			       	"left_paren",
 			       	"PARAMETER-LIST",
 			       	"right_paren",
 			       	"colon",
 			       	"TYPE", 
-				"BODY"
+				"BODY",
+				"FUNC-ACTION"
 			]
 		]
 	},
 	"PARAMETER-LIST": {
 		"identifier": [
-			"push", [ "FORMAL-PARAMETERS" ]
+			"push", [ 
+				"NIL-ACTION",
+				"FORMAL-PARAMETERS" 
+			]
 		],
-		"right_paren": [ "reduce" ]
+		"right_paren": [ 
+			"push", [
+				"NIL-ACTION"
+			]
+		]
 	},
 	"FORMAL-PARAMETERS": {
 		"identifier": [
 			"push", [
 				"ID-WITH-TYPE",
+				"LIST-ACTION",
 				"FORMAL-PARAMETERS-2"
 			]
 		]
@@ -241,26 +255,35 @@ let parse_table = {
 				"FORMAL-PARAMETERS"
 			]	
 		],
-		"right_paren": [ "reduce" ]
+		"right_paren": [ ]
 	},
 	"ID-WITH-TYPE": {
 		"identifier": [
 			"push", [
 				"identifier",
+				"ID-ACTION",
 				"colon", 
-				"TYPE"
+				"TYPE",
+				"DECL-ACTION"
 			]	
 		]
 	},
 	"TYPE": {
-		"boolean": [ "push", [ "boolean" ] ],
-		"integer": [ "push", [ "integer" ] ]
+		"boolean": [ "push", [ 
+			"boolean",
+			"TYPE-ACTION"
+		] ],
+		"integer": [ "push", [ 
+			"integer",
+			"TYPE-ACTION"
+		] ]
 	},
 	"BODY": {
 		"print": [
 			"push", [
 				"PRINT-EXPRESSION",
-				"BODY"
+				"BODY",
+				"SEQ-ACTION"
 			]
 		],
 
@@ -274,16 +297,16 @@ let parse_table = {
 			"push", [ "EXPRESSION" ]	
 		],
 		"if": [
-			"push", [ "EXPRESSION"	]
+			"push", [ "EXPRESSION"]
 		],
 		"left_paren": [
 			"push", [ "EXPRESSION" ]
 		],
 		"number": [
-			"push", [ "EXPRESSION"]	
+			"push", [ "EXPRESSION" ]	
 		],
 		"true": [
-			"push", [ "EXPRESSION"]
+			"push", [ "EXPRESSION" ]
 		],
 		"false": [
 			"push", [ "EXPRESSION" ]	
@@ -295,7 +318,8 @@ let parse_table = {
 				"print",
 				"left_paren",
 				"EXPRESSION",
-				"right_paren"
+				"right_paren",
+				"PRINT-ACTION"
 			]
 		]
 	},
@@ -353,21 +377,23 @@ let parse_table = {
 		"equal": [
 			"push", [
 				"equal",
-				"EXPRESSION"
+				"EXPRESSION",
+				"EQUAL-ACTION"
 			]
 		],
 		"less_than": [
 			"push", [
 				"less_than",
-				"EXPRESSION"
+				"EXPRESSION",
+				"LESS_THAN-ACTION"
 			]
 		],
-		"comma": [ "reduce" ],
-		"then": [ "reduce" ],
-		"else": [ "reduce" ],
-		"right_paren": [ "reduce" ],
-		"function": [ "reduce" ],
-		"end": [ "reduce" ]
+		"comma": [ ],
+		"then": [ ],
+		"else": [ ],
+		"right_paren": [ ],
+		"function": [ ],
+		"end": [ ]
 	},
 
 	"SIMPLE-EXPRESSION": {
@@ -425,29 +451,32 @@ let parse_table = {
 		"or": [
 			"push", [
 				"or",
-				"SIMPLE-EXPRESSION"
+				"SIMPLE-EXPRESSION",
+				"OR-ACTION"
 			]
 		],
 		"plus": [
 			"push", [
 				"plus",
-				"SIMPLE-EXPRESSION"
+				"SIMPLE-EXPRESSION",
+				"ADD-ACTION"
 			]
 		],
 		"minus": [
 			"push", [
 				"minus",
-				"SIMPLE-EXPRESSION"
+				"SIMPLE-EXPRESSION",
+				"SUB-ACTION"
 			]
 		],
-		"comma": [ "reduce" ],
-		"then": [ "reduce" ],
-		"else": [ "reduce" ],
-		"right_paren": [ "reduce" ],
-		"function": [ "reduce" ],
-		"equal": [ "reduce" ],
-		"less_than": [ "reduce" ],
-		"end": [ "reduce" ]
+		"comma": [ ],
+		"then": [ ],
+		"else": [ ],
+		"right_paren": [ ],
+		"function": [ ],
+		"equal": [ ],
+		"less_than": [ ],
+		"end": [ ]
 	},
 	"TERM": {
 		"not": [
@@ -504,49 +533,55 @@ let parse_table = {
 		"star": [
 			"push", [
 				"star",
-				"TERM"
+				"TERM",
+				"MUL-ACTION"
 			]
 		],
 		"slash": [
 			"push", [
 				"slash",
-				"TERM"
+				"TERM",
+				"DIV-ACTION"
 			]
 		],
 		"and": [
 			"push", [
 				"and",
-				"TERM"
+				"TERM",
+				"AND-ACTION"
 			]
 		],
-		"comma": [ "reduce" ],
-		"then": [ "reduce" ],
-		"else": [ "reduce" ],
-		"right_paren": [ "reduce" ],
-		"function": [ "reduce" ],
-		"equal": [ "reduce" ],
-		"less_than": [ "reduce" ],
-		"or": [ "reduce" ],
-		"plus": [ "reduce" ],
-		"minus": [ "reduce" ],
-		"end": [ "reduce" ]
+		"comma": [ ],
+		"then": [ ],
+		"else": [ ],
+		"right_paren": [ ],
+		"function": [ ],
+		"equal": [ ],
+		"less_than": [ ],
+		"or": [ ],
+		"plus": [ ],
+		"minus": [ ],
+		"end": [ ]
 	},
 	"FACTOR": {
 		"not": [
 			"push", [
 				"not",
-				"FACTOR"
+				"FACTOR",
+				"NOT-ACTION"
 			]
 		],
 		"minus": [
 			"push", [
 				"minus",
-				"FACTOR"
+				"FACTOR",
+				"NEG-ACTION"
 			]	
 		],
 		"identifier": [
 			"push", [
 				"identifier",
+				"ID-ACTION",
 				"FACTOR-2"
 			]	
 		],
@@ -557,7 +592,8 @@ let parse_table = {
 				"then",
 				"EXPRESSION",
 				"else",
-				"EXPRESSION"
+				"EXPRESSION",
+				"IF-ACTION"
 			]
 		],
 		"left_paren": [
@@ -573,119 +609,151 @@ let parse_table = {
 			"push", [ "LITERAL" ]	
 		],
 
-		"comma": [ "reduce" ],
-		"then": [ "reduce" ],
-		"else": [ "reduce" ],
-		"right_paren": [ "reduce" ],
-		"function": [ "reduce" ],
-		"equal": [ "reduce" ],
-		"less_than": [ "reduce" ],
-		"or": [ "reduce" ],
-		"plus": [ "reduce" ],
-		"minus": [ "reduce" ],
-		"star": [ "reduce" ],
-		"slash": [ "reduce" ],
-		"and": [ "reduce" ],
-		"null": [ "reduce" ]
+		"comma": [ ],
+		"then": [ ],
+		"else": [ ],
+		"right_paren": [ ],
+		"function": [ ],
+		"equal": [ ],
+		"less_than": [ ],
+		"or": [ ],
+		"plus": [ ],
+		"star": [ ],
+		"slash": [ ],
+		"and": [ ],
+		"null": [ ]
 	},
 	"FACTOR-2": {
 		"left_paren": [
 			"push", [
 				"left_paren",
 				"ARGUMENT-LIST",
-				"right_paren"
+				"right_paren",
+				"CALL-ACTION"
 			]
 		],
-		"comma": [ "reduce" ],
-		"then": [ "reduce" ],
-		"else": [ "reduce" ],
-		"right_paren": [ "reduce" ],
-		"function": [ "reduce" ],
-		"equal": [ "reduce" ],
-		"less_than": [ "reduce" ],
-		"or": [ "reduce" ],
-		"plus": [ "reduce" ],
-		"minus": [ "reduce" ],
-		"star": [ "reduce" ],
-		"slash": [ "reduce" ],
-		"and": [ "reduce" ],
-		"end": [ "reduce" ]
+		"comma": [ ],
+		"then": [ ],
+		"else": [ ],
+		"right_paren": [ ],
+		"function": [ ],
+		"equal": [ ],
+		"less_than": [ ],
+		"or": [ ],
+		"plus": [ ],
+		"minus": [ ],
+		"star": [ ],
+		"slash": [ ],
+		"and": [ ],
+		"end": [ ]
 	},
 
 	"ARGUMENT-LIST": {
-		"right_paren": [ "reduce" ],
+		"right_paren": [ ],
 		"not": [
-			"push", [ "FORMAL-ARGUMENTS" ]
+			"push", [ 
+				"NIL-ACTION",
+				"FORMAL-ARGUMENTS" 
+			]
 		],
 		"minus": [
-			"push", [ "FORMAL-ARGUMENTS" ]	
+			"push", [ 
+				"NIL-ACTION",
+				"FORMAL-ARGUMENTS" 
+			]	
 		],
 		"identifier": [
-			"push", [ "FORMAL-ARGUMENTS" ]	
+			"push", [ 
+				"NIL-ACTION",
+				"FORMAL-ARGUMENTS"
+			]
 		],
 		"if": [
-			"push", [ "FORMAL-ARGUMENTS" ]
+			"push", [ 
+				"NIL-ACTION",
+				"FORMAL-ARGUMENTS" 
+			]
 		],
 		"left_paren": [
-			"push", [ "FORMAL-ARGUMENTS" ]
+			"push", [
+				"NIL-ACTION",
+				"FORMAL-ARGUMENTS" 
+			]
 		],
 		"number": [
-			"push", [ "FORMAL-ARGUMENTS" ]	
+			"push", [ 
+				"NIL-ACTION",
+				"FORMAL-ARGUMENTS" 
+			]	
 		],
 		"true": [
-			"push", [ "FORMAL-ARGUMENTS" ]
+			"push", [ 
+				"NIL-ACTION",
+				"FORMAL-ARGUMENTS" 
+			]
 		],
 		"false": [
-			"push", [ "FORMAL-ARGUMENTS" ]	
+			"push", [ 
+				"NIL-ACTION",
+				"FORMAL-ARGUMENTS" 
+			]	
 		]	
 	},
 	"FORMAL-ARGUMENTS": {
-		"right_paren": [ "reduce" ],
+		"right_paren": [ ],
 		"not": [
 			"push", [
 				"EXPRESSION",
+				"LIST-ACTION",
 				"FORMAL-ARGUMENTS-2"
 			]
 		],
 		"minus": [
 			"push", [
 				"EXPRESSION",
+				"LIST-ACTION",
 				"FORMAL-ARGUMENTS-2"
 			]	
 		],
 		"identifier": [
 			"push", [
 				"EXPRESSION",
+				"LIST-ACTION",
 				"FORMAL-ARGUMENTS-2"
 			]	
 		],
 		"if": [
 			"push", [
 				"EXPRESSION",
+				"LIST-ACTION",
 				"FORMAL-ARGUMENTS-2"
 			]
 		],
 		"left_paren": [
 			"push", [
 				"EXPRESSION",
+				"LIST-ACTION",
 				"FORMAL-ARGUMENTS-2"
 			]
 		],
 		"number": [
 			"push", [
 				"EXPRESSION",
+				"LIST-ACTION",
 				"FORMAL-ARGUMENTS-2"
 			]	
 		],
 		"true": [
 			"push", [
 				"EXPRESSION",
+				"LIST-ACTION",
 				"FORMAL-ARGUMENTS-2"
 			]
 		],
 		"false": [
 			"push", [
 				"EXPRESSION",
+				"LIST-ACTION",
 				"FORMAL-ARGUMENTS-2"
 			]	
 		]	
@@ -697,31 +765,41 @@ let parse_table = {
 				"FORMAL-ARGUMENTS"
 			]	
 		],
-		"right_paren": [ "reduce" ],
-		"function": [ "reduce" ],
-		"equal": [ "reduce" ],
-		"less_than": [ "reduce" ],
-		"end": [ "reduce" ]
+		"right_paren": [ ],
+		"function": [ ],
+		"equal": [ ],
+		"less_than": [ ],
+		"end": [ ]
 	},
 	"LITERAL": {
 		"number": [
-			"push", [ "number" ]	
+			"push", [ 
+				"number",
+				"NUM-ACTION"
+			]	
 		],
 		"true": [
-			"push", [ "true" ]
+			"push", [ 
+				"true",
+				"BOOL-ACTION"
+			]
 		],
 		"false": [
-			"push", [ "false" ]
+			"push", [ 
+				"false",
+				"BOOL-ACTION"
+			]
 		]
 	}
 };
 
 
-let Parser = (table, scanner, skip) => {
+let Parser = (table, scanner, skip, start, end, actions) => {
 	let obj = {
 		parse: (string) => {
 			scanner.init(string);
-			let stack = ["end", "PROGRAM"]; //last state
+			let stack = [end, start]; //last state
+			let sem_stack = [];
 
 			let p_token = null; //for error messages 
 			while(stack.length){
@@ -752,19 +830,16 @@ let Parser = (table, scanner, skip) => {
 					switch(step[0]){
 						case "push":
 							stack.push(...step[1].toReversed())
-						case "reduce":
-							; //TODO
 					}
+				}else if(actions[state]){
+					actions[state](p_token, sem_stack, string);
 				}else{
 					if(state != token.type){
-						console.log("parse error after: ", p_token, value, " unexpected ", token);
+						console.log(state, ": parse error after: ", p_token, value, " unexpected ", token);
 						break;
 					}
 
-					scanner.next();
-
-
-					//TODO
+					p_token = scanner.next()[0];
 				}
 
 
@@ -774,6 +849,8 @@ let Parser = (table, scanner, skip) => {
 
 			if(stack.length != 0)
 				return null;
+
+			return sem_stack;
 		}
 	}
 
@@ -781,4 +858,67 @@ let Parser = (table, scanner, skip) => {
 }
 
 
-let KleinParser = Parser(parse_table, KleinScanner, ["comment", "white_space"]);
+let ID = (name) => ({type: "ref", name});
+let NUM = (value) => ({type: "num", value});
+let BOOL = (value) => ({type: "bool", value});
+
+let APP = (func, args) => ({type: "app", func, args});
+let IFELSE = (cond, t, e) => ({type: "cond", cond, "then": t, "else": e});
+let EQ = (lhs, rhs) => ({type: "equality", lhs, rhs});
+
+let TYPE = (name) => ({type: "type", name});
+let DECL = (set, name) => ({type: "type", name, set});
+let SEQ = (a, b) => ({type: "seq", expr: [a, b]});
+let FUNC_DEF = (name, args, ret, body) => ({type: "func", name, args, ret, body});
+
+
+let KleinParser = Parser(
+	parse_table, 
+	KleinScanner, 
+	["comment", "white_space"], 
+	"PROGRAM", 
+	"end", {
+		"NIL-ACTION": (tok, stack, str) => stack.push([]),
+		"LIST-ACTION": (tok, stack, str) => {
+			let v = stack.pop();
+			stack.at(-1).push(v);
+		},
+		"ID-ACTION": (tok, stack, str) => stack.push(ID(str.slice(tok.start, tok.end))),
+		"NUM-ACTION": (tok, stack, str) => stack.push(NUM(+str.slice(tok.start, tok.end))),
+		"BOOL-ACTION": (tok, stack, str) => stack.push(BOOL(Boolean(str.slice(tok.start, tok.end)))),
+		"CALL-ACTION": (tok, stack, str) => stack.push(APP(...[[stack.pop()], stack.pop()].toReversed())),
+
+		"SUB-ACTION": (tok, stack, str) => stack.push(APP(ID("0sub"), 
+			[stack.pop(), stack.pop()].toReversed())),
+		"MUL-ACTION": (tok, stack, str) => stack.push(APP(ID("0mul"), 
+			[stack.pop(), stack.pop()].toReversed())),
+		"ADD-ACTION": (tok, stack, str) => stack.push(APP(ID("0add"), 
+			[stack.pop(), stack.pop()].toReversed())),
+		"DIV-ACTION": (tok, stack, str) => stack.push(APP(ID("0div"), 
+			[stack.pop(), stack.pop()].toReversed())),
+		"NEG-ACTION": (tok, stack, str) => stack.push(APP(ID("0neg"), 
+			[stack.pop()])),
+		"LESS_THAN-ACTION": (tok, stack, str) => stack.push(APP(ID("0less_than"), 
+			[stack.pop(), stack.pop()].toReversed())),
+
+		"AND-ACTION": (tok, stack, str) => stack.push(APP(ID("0and"), 
+			[stack.pop(), stack.pop()].toReversed())),
+		"OR-ACTION": (tok, stack, str) => stack.push(APP(ID("0or"), 
+			[stack.pop(), stack.pop()].toReversed())),
+		"NOT-ACTION": (tok, stack, str) => stack.push(APP(ID("0not"), 
+			[stack.pop()])),
+
+		"PRINT-ACTION": (tok, stack, str) => stack.push(APP(ID("0print"), 
+			[stack.pop()])),
+
+		"EQUAL-ACTION": (tok, stack, str) => stack.push(EQ(stack.pop(), stack.pop())),
+
+		"IF-ACTION": (tok, stack, str) => stack.push(IFELSE(...[stack.pop(), stack.pop(), stack.pop()].toReversed())),
+
+		"TYPE-ACTION": (tok, stack, str) => stack.push(TYPE(str.slice(tok.start, tok.end))),
+
+		"DECL-ACTION": (tok, stack, str) => stack.push(DECL(stack.pop(), stack.pop())),
+		"SEQ-ACTION": (tok, stack, str) => stack.push(SEQ([stack.pop(), stack.pop()].toReversed())),
+		"FUNC-ACTION": (tok, stack, str) => stack.push(FUNC_DEF(
+			...[stack.pop(), stack.pop(), stack.pop(), stack.pop()].toReversed()))
+	});
